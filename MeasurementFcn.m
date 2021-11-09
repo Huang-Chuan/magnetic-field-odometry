@@ -1,0 +1,7 @@
+function [yk] = MeasurementFcn(x, sensor_disp)
+%UNTITLED3 Summary of this function goes here
+%   Detailed explanation goes here
+    r = sensor_disp;
+    yk = [r^2 -r 1;0 0 1; r^2 r 1] * [x(3);x(4);x(5)];
+end
+
