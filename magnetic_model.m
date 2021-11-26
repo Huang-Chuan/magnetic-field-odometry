@@ -7,15 +7,15 @@ function [m] = magnetic_model(x, type)
     
     switch type
         case 0
-            m = 1e-6 * (c(1) * x^2 + c(2) * x + c(3));
+            m = c(1) * x^2 + c(2) * x + c(3);
         case 1
             if  x > 0
-                m = 1e-6 * (c0(1) * x^2 + c0(2) * x + c0(3));
+                m = c0(1) * x^2 + c0(2) * x + c0(3);
             else
-                m = 1e-6 * (c1(1) * x^2 + c1(2) * x + c1(3));
+                m = c1(1) * x^2 + c1(2) * x + c1(3);
             end
         case 2
-            m =  1e-6 * (-0.5 * x + 30);
+            m =  -0.5 * x + 30;
     end
     
     
