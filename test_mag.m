@@ -3,10 +3,10 @@ close all;
 
 %% System configuration
 opt.hasAccBias = true;
-opt.hasMagBias = false;
+opt.hasMagBias = true;
 
 % type of magnetic field
-type = 1;
+type = 2;
 % simulate IMU noise
 sigma_acceleration = 0.05;
 % simulate IMU bias random walk
@@ -25,8 +25,42 @@ init_vel = [1, 0, 0];
 fs = 100;
 dT = 1 / fs;
 % monte carlo simulation
-N = 4;
+N = 100;
 % rng(1);
+
+% select stateTransitionFunc accordingly
+stateTransitionCls = StateTransitionFcns();
+stateTransitionCls.opt = opt;
+
+% select measurementFunc accordingly
+measurementCls = MeasurementFcns();
+measurementCls.opt = opt;
+
+% [accelerometer white noise, other white noise]
+processNoise = [sigma_acceleration^2, 1e-10, 1e-10, sigma_acc_bias^2, 1e-6, 1e-6, 1e-6, 1e-1, 1e-1, 1e-1];
+% [pk, vk, delta_a_k, delta_m_k_m1, delta_m_k_0, delta_m_k_1, c0, c1, c2]
+stateCovariance =  [0, 0, 0.01,  sigma_const_bias_m^2, sigma_const_bias_m^2, sigma_const_bias_m^2, 20, 20, 20];
+% 
+stateTransitionFcn = stateTransitionCls.getStateTransitionFcn();
+measurementFcn = measurementCls.getMeasurementFcn();
+
+% select processNoise, stateCovariance accordingly
+if (~opt.hasMagBias) && (~opt.hasAccBias) 
+    processNoise = diag([processNoise(1 : 3),  processNoise(end - 2 : end)]);
+    stateCovariance = diag([stateCovariance(1 : 2),  stateCovariance(end - 2 : end)]);
+elseif(~opt.hasMagBias) && (opt.hasAccBias) 
+    processNoise = diag([processNoise(1 : 4),  processNoise(end - 2 : end)]);
+    stateCovariance = diag([stateCovariance(1 : 3),  stateCovariance(end - 2 : end)]);
+elseif(opt.hasMagBias) && (~opt.hasAccBias) 
+    processNoise = diag([processNoise(1 : 3), processNoise(5 : 7), processNoise(end - 2 : end)]);
+    stateCovariance = diag([stateCovariance(1 : 2),  stateCovariance(5 : 7), stateCovariance(end - 2 : end)]);
+elseif(opt.hasMagBias) && (opt.hasAccBias) 
+    processNoise = diag(processNoise);
+    stateCovariance = diag(stateCovariance);
+else
+    processNoise    = 0;
+    stateCovariance = 0;
+end
 %% illustrate magnetic field
 x = -10 : 0.1 : 5;
 field1 = arrayfun(@(x) magnetic_model(x, type), x);
@@ -62,6 +96,8 @@ xlabel('Time (s)')
 ylabel('Position (m)')
 title('NED Position Over Time')
 legend('North','East','Down')
+
+
 %% Generate IMU data
 ImuMag_data = repmat(struct('IMU', [], 'MAG', []), N, 1);
 
@@ -124,50 +160,16 @@ end
 XData = cell(N, 1);
 PData = cell(N, 1);
 
-% select stateTransitionFunc accordingly
-stateTransitionCls = StateTransitionFcns();
-stateTransitionCls.opt = opt;
-
-% select measurementFunc accordingly
-measurementCls = MeasurementFcns();
-measurementCls.opt = opt;
 
 t = now;
 d = datetime(t,'ConvertFrom','datenum');
 
 
-% [accelerometer white noise, other white noise]
-processNoise = [sigma_acceleration^2, 1e-10, 1e-10, sigma_acc_bias^2, 1e-6, 1e-6, 1e-6, 1e-1, 1e-1, 1e-1];
-% [pk, vk, delta_a_k, delta_m_k_m1, delta_m_k_0, delta_m_k_1, c0, c1, c2]
-stateCovariance =  [0, 0, 0.01,  sigma_const_bias_m^2, sigma_const_bias_m^2, sigma_const_bias_m^2, 20, 20, 20];
-
-% select processNoise, stateCovariance accordingly
-if (~opt.hasMagBias) && (~opt.hasAccBias) 
-    processNoise = diag([processNoise(1 : 3),  processNoise(end - 2 : end)]);
-    stateCovariance = diag([stateCovariance(1 : 2),  stateCovariance(end - 2 : end)]);
-elseif(~opt.hasMagBias) && (opt.hasAccBias) 
-    processNoise = diag([processNoise(1 : 4),  processNoise(end - 2 : end)]);
-    stateCovariance = diag([stateCovariance(1 : 3),  stateCovariance(end - 2 : end)]);
-elseif(opt.hasMagBias) && (~opt.hasAccBias) 
-    processNoise = diag([processNoise(1 : 3), processNoise(5 : 7), processNoise(end - 2 : end)]);
-    stateCovariance = diag([stateCovariance(1 : 2),  stateCovariance(5 : 7), stateCovariance(end - 2 : end)]);
-elseif(opt.hasMagBias) && (opt.hasAccBias) 
-    processNoise = diag(processNoise);
-    stateCovariance = diag(stateCovariance);
-else
-    processNoise    = 0;
-    stateCovariance = 0;
-end
-
-
 r = sensor_spacing;
 H = [r^2 -r 1;0 0 1; r^2 r 1]; 
 
-
-stateTransitionFcn = stateTransitionCls.getStateTransitionFcn();
-measurementFcn = measurementCls.getMeasurementFcn();
 tic
-% run with iteration
+%% run with iteration
 parfor iter = 1 : N
     magnetometerReadings = ImuMag_data(iter).MAG;
     accelerometerReadings = ImuMag_data(iter).IMU;
