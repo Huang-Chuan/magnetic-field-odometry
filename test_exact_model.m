@@ -23,7 +23,7 @@ function [] = test_exact_model(magType)
     fs = 100;
     dT = 1 / fs;
     % monte carlo simulation
-    N = 50;
+    N = 1000;
     % rng(1);
 
     % select stateTransitionFunc accordingly
@@ -95,7 +95,8 @@ function [] = test_exact_model(magType)
     % ImuMag_data = repmat(struct('IMU', [], 'MAG', []), N, 1);
     % 
     % %(random walk is turned off, only constant bias)
-    % accparams = accelparams('RandomWalk', [sigma_acc_bias * sqrt(fs/2) * 0, 0, 0], 'NoiseDensity', sigma_acceleration/sqrt(fs/2), 'ConstantBias', 0.1 * randn(1, 3));
+    % accparams = accelparams('RandomWalk', [sigma_acc_bias * sqrt(fs/2) * 0, 0, 0], 'NoiseDensity', sigma_acceleration/sqrt(fs/2), 
+    % 'ConstantBias', 0.1 * randn(1, 3));
     % IMU = imuSensor('SampleRate', fs, 'Accelerometer', accparams);
     % [accelerometerReadings,gyroscopeReadings] = IMU(accBody, angVelBody);
     % figure;

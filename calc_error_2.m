@@ -44,23 +44,23 @@ function error_struct = calc_error_2(XData, PData, Xs, numSamples, N, opt)
         stdC1Err(:, iter) = PData{iter}(:, end - 1, end - 1);
         mseC0Err(:, iter) = (XData{iter}(:, end) - Xs{iter}(:, end)).^2;
         stdC0Err(:, iter) = PData{iter}(:, end, end);
+        if(opt.hasAccBias) && (opt.hasMagBias) 
+            mseAccBiasErr(:, iter) = (XData{iter}(:, 3) - Xs{iter}(:, 3)).^2;
+            stdAccBiasErr(:, iter)= PData{iter}(:, 3, 3);
+    
+            mseMagBiasErr1(:, iter)    = (XData{iter}(:, 4) - Xs{iter}(:, 4)).^2;
+            stdMagBiasErr1(:, iter)     = PData{iter}(:, 4, 4);
+        elseif(opt.hasAccBias) && (~opt.hasMagBias) 
+            mseAccBiasErr(:, iter) = (XData{iter}(:, 3) - Xs{iter}(:, 3)).^2;
+            stdAccBiasErr(:, iter)= PData{iter}(:, 3, 3);
+        elseif (~opt.hasAccBias) && (opt.hasMagBias) 
+            mseMagBiasErr1(:, iter)    = (XData{iter}(:, 3) - Xs{iter}(:, 3)).^2;
+            stdMagBiasErr1(:, iter)    = PData{iter}(:, 3, 3);   
+        end
+        
 
     end
     
-    
-    if(opt.hasAccBias) && (opt.hasMagBias) 
-        mseAccBiasErr(:, iter) = (XData{iter}(:, 3) - Xs{iter}(:, 3)).^2;
-        stdAccBiasErr(:, iter)= PData{iter}(:, 3, 3);
-
-        mseMagBiasErr1    = (XData{iter}(:, 4) - Xs{iter}(:, 4)).^2;
-        stdMagBiasErr1     = PData{iter}(:, 4, 4);
-    elseif(opt.hasAccBias) && (~opt.hasMagBias) 
-        mseAccBiasErr(:, iter) = (XData{iter}(:, 3) - Xs{iter}(:, 3)).^2;
-        stdAccBiasErr(:, iter)= PData{iter}(:, 3, 3);
-    elseif (~opt.hasAccBias) && (opt.hasMagBias) 
-        mseMagBiasErr1    = (XData{iter}(:, 3) - Xs{iter}(:, 3)).^2;
-        stdMagBiasErr1     = PData{iter}(:, 3, 3);   
-    end
     
     error_struct.msePosErr = sqrt(mean(msePosErr, 2));
     error_struct.stdPosErr = sqrt(mean(stdPosErr, 2));
