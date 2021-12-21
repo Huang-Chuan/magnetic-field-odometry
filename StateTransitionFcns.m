@@ -1,145 +1,65 @@
-classdef StateTransitionFcns
-    properties 
-        opt
-    end
-    methods(Static)
-        function [x] = StateTransitionFcn0(xk, vk, u)
-            % accelerometer noise
-            delta_a = vk(1);
-            % position process noise
-            wkp = vk(2);
-            
-            dT = 0.01;
-            dp = xk(2) * dT + 1/2 * (u - delta_a) * dT^2 + wkp ;
+function [x] = StateTransitionFcns(xk, vk, u)
 
-            c2  = xk(end-2);
-            c1  = xk(end-1);
-            
-            F = [1 dT    0  0  0; ...
-                0  1     0  0  0; ...
-                0  0     1  0  0; ...
-                0  0    2*dp  1  0; ...
-                0  0    dp^2  dp  1];
-        
-            G = [1/2*dT^2; dT; 0; 0; 0];
-            
-            GG = [-1/2*dT^2; -dT;  0; -1/2*dT^2; -c2 * dp * dT^2 - 1/2 * c1 * dT^2];
-            
-        
-            x = F * xk + G * u + GG * vk(1) + vk(2:end);
-        end
-
-        function [x] = StateTransitionFcn1(xk, vk, u)
-            % accelerometer noise
-            delta_a = vk(1);
-            % position process noise
-            wkp = vk(2);
-            
-            dT = 0.01;
-            dp = xk(2) * dT + 1/2 * (u - delta_a - xk(3)) * dT^2 + wkp ;
-
-            c2  = xk(end-2);
-            c1  = xk(end-1);
-            
-            F = [1 dT  -1/2 * dT^2       0  0  0; ...
-                0  1  -dT                0  0  0; ...
-                0  0   1                 0  0  0; ...
-                0  0  0                 1  0  0; ...
-                0  0  0              2*dp  1  0; ...
-                0  0  0              dp^2  dp  1];
-        
-            G = [1/2*dT^2; dT; 0; 0; 0; 0];
-            
-            GG = [-1/2*dT^2; -dT; 0; 0; -1/2*dT^2; -c2 * dp * dT^2 - 1/2 * c1 * dT^2];
-            
-        
-            x = F * xk + G * u + GG * vk(1) + vk(2:end);
-        end
-
-        function [x] = StateTransitionFcn2(xk, vk, u)
-            % accelerometer noise
-            delta_a = vk(1);
-            % position process noise
-            wk_p = vk(2);
-            
-            dT = 0.01;
-            dp = xk(2) * dT + 1/2 * (u - delta_a) * dT^2 + wk_p ;
-
-            c2  = xk(end-2);
-            c1  = xk(end-1);
-            
-            F = [1 dT 0  0  0     0  0  0; ...
-                0  1  0  0  0     0  0  0; ...
-                0  0  1  0  0     0  0  0; ...
-                0  0  0  1  0     0  0  0; ...
-                0  0  0  0  1     0  0  0; ...
-                0  0  0  0  0     1  0  0; ...
-                0  0  0  0  0  2*dp  1  0; ...
-                0  0  0  0  0  dp^2  dp  1];
-        
-            G = [1/2*dT^2; dT; 0; 0; 0; 0; 0; 0];
-            
-            GG = [-1/2*dT^2;  -dT; ...
-                          0;    0;  0; ...
-                          0; -1/2*dT^2; -c2 * dp * dT^2 - 1/2 * c1 * dT^2];
-            
-        
-            x = F * xk + G * u + GG * vk(1) + vk(2:end);
-        end
-
-        function [x] = StateTransitionFcn3(xk, vk, u)
-            % accelerometer noise
-            delta_a = vk(1);
-            % position process noise
-            wk_p = vk(2);
-            
-            dT = 0.01;
-            dp = xk(2) * dT + 1/2 * (u - delta_a - xk(3)) * dT^2 + wk_p ;
-
-            c2  = xk(end-2);
-            c1  = xk(end-1);
-            
-            F = [1 dT  -1/2 * dT^2   0   0  0     0  0  0; ...
-                0  1  -dT            0   0  0     0  0  0; ...
-                0  0   1             0   0  0     0  0  0; ...
-                
-                0  0  0              1   0  0     0  0  0; ...
-                0  0  0              0   1  0     0  0  0; ...
-                0  0  0              0   0  1     0  0  0; ...
-                
-                0  0  0              0   0  0     1  0  0; ...
-                0  0  0              0   0  0  2*dp  1  0; ...
-                0  0  0              0   0  0  dp^2  dp  1];
-        
-            G = [1/2*dT^2; dT; 0; 0; 0; 0; 0; 0; 0];
-            
-            GG = [-1/2*dT^2;       -dT; 0; ...
-                          0;         0; 0; ...
-                          0; -1/2*dT^2; -c2 * dp * dT^2 - 1/2 * c1 * dT^2];
-            
-        
-            x = F * xk + G * u + GG * vk(1) + vk(2:end);
-        end
-
+    % persistent var
+    persistent invAB;
+    if isempty(invAB)
+        invAB = inv([calcAB([0,0,1]); calcAB([0, 1, 0]); calcAB([1, 0, 0]); calcAB([1, 1, 1]); calcAB([0, 0, 0])]);
     end
 
-    methods
-        function [StateTransitionFcn] = getStateTransitionFcn(obj)
-            if (~obj.opt.hasMagBias) && (~obj.opt.hasAccBias) 
-                StateTransitionFcn = @obj.StateTransitionFcn0;
-            elseif (~obj.opt.hasMagBias) && (obj.opt.hasAccBias) 
-                StateTransitionFcn = @obj.StateTransitionFcn1;
-            elseif (obj.opt.hasMagBias) && (~obj.opt.hasAccBias) 
-                StateTransitionFcn = @obj.StateTransitionFcn2;
-            elseif (obj.opt.hasMagBias) && (obj.opt.hasAccBias) 
-                StateTransitionFcn = @obj.StateTransitionFcn3;
-            else
-               StateTransitionFcn = 0;
-            end
-         end
+
+    % accelerometer noise
+    acc_w = vk(1 : 3);
+    % velocity noise
+    vel_w = vk(4 : 6);
+    % acc bias drift
+    acc_bias_n = vk(7 : 9);
+    % mag bias drift (5 x 3)
+    mag_bias_n = vk(10 : 24);
+    % coeff drift
+    coeff_w = vk(25 : end);
     
-    
-    end
+    % position, velocity,  accelerometer bias, magnetometer bias, theta
+    pk = xk(1:3);
+    vk = xk(4:6);
+    acc_bias = xk(7:9);
+    mag_b = xk(10:24);
+    theta = xk(25:end);
+    % sample rate
+    dT = 0.01;
 
+    %  parse u
+    acc_m = u(1:3);
+    q_nb  = u(4:7);
+    omega_m = u(8:end);
+
+
+    R_nb = q2r(q_nb);
+    acc_body = (acc_m - acc_bias - acc_w) + [0; 0; 9.8];
+    acc_nav = R_nb * acc_body;
+
+    dp = vk * dT + 1/2 * acc_nav * dT^2;
+    
+    % 
+    x = zeros(size(xk));
+    x(1:3) = pk + dp;
+    x(4:6) = vk + R_nb * acc_nav * dT + vel_w;
+    x(7:9) = acc_bias + acc_bias_n;
+    x(10:24) = mag_b + mag_bias_n;
+   
+    %rotangle = omega_m * dT;
+    %rot12m = axang2rotm([rotangle / norm(rotangle); norm(rotangle)].');
+    rot12m = eye(3);
+
+    % coordinates of selected points in R1
+    dp_body = eye(3) * vk * dT + 1/2 * acc_body * dT^2;
+    pos_sel = rot12m * [0 0 1 1 0; 0 1 0 1 0; 1 0 0 1 0] + dp_body;
+    RAB_C1 = [rot12m.' * calcAB(pos_sel(:, 1)); 
+              rot12m.' * calcAB(pos_sel(:, 2));
+              rot12m.' * calcAB(pos_sel(:, 3));
+              rot12m.' * calcAB(pos_sel(:, 4));
+              rot12m.' * calcAB(pos_sel(:, 5))];
+   
+   
+    x(25:end) = invAB * RAB_C1 * theta + coeff_w;
 
 end

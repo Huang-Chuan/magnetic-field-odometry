@@ -1,47 +1,15 @@
-classdef MeasurementFcns
-    properties 
-        opt
-    end
-    methods(Static)
-        function [yk] = MeasurementFcn0(x, sensor_disp)
-            r = sensor_disp;
-            yk = [r^2 -r 1; 0 0 1; r^2 r 1] * x(end-2:end);
-        end
-
-        function [yk] = MeasurementFcn1(x, sensor_disp)
-            r = sensor_disp;
-            yk = [r^2 -r 1; 0 0 1; r^2 r 1] * x(end-2:end);
-        end
-
-        function [yk] = MeasurementFcn2(x, sensor_disp)
-            r = sensor_disp;
-            yk = [r^2 -r 1; 0 0 1; r^2 r 1] * x(end-2:end) + x(3:5);
-        end
-
-        function [yk] = MeasurementFcn3(x, sensor_disp)
-            r = sensor_disp;
-            yk = [r^2 -r 1; 0 0 1; r^2 r 1] * x(end-2:end) + x(4:6);
-        end
-
-    end
-
-    methods
-        function [MeasurementFcn] = getMeasurementFcn(obj)
-            if (~obj.opt.hasMagBias) && (~obj.opt.hasAccBias) 
-                MeasurementFcn = @obj.MeasurementFcn0;
-            elseif(~obj.opt.hasMagBias) && (obj.opt.hasAccBias) 
-                MeasurementFcn = @obj.MeasurementFcn1;
-            elseif(obj.opt.hasMagBias) && (~obj.opt.hasAccBias) 
-                MeasurementFcn = @obj.MeasurementFcn2;
-            elseif(obj.opt.hasMagBias) && (obj.opt.hasAccBias) 
-                MeasurementFcn = @obj.MeasurementFcn3;
-            else
-               MeasurementFcn = 0;
-            end
-         end
-    
-    
-    end
-
-
+function [yk] = MeasurementFcns(x, r)
+    sensor_locs = [[r/2; r; 0] [-r/2; r; 0] [r/2; 0; 0] [-r/2; 0; 0] [r/2; -r; 0] [-r/2; -r; 0]];
+    H = [calcAB(sensor_locs(:, 1)); ...
+         calcAB(sensor_locs(:, 2)); ...
+         calcAB(sensor_locs(:, 3)); ...
+         calcAB(sensor_locs(:, 4)); ...
+         calcAB(sensor_locs(:, 5)); ...
+         calcAB(sensor_locs(:, 6))];
+    yk = H * x(end-14:end) + [x(10:24); zeros(3, 1)];
 end
+
+
+
+
+
