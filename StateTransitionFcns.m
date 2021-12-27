@@ -1,7 +1,8 @@
 function [x] = StateTransitionFcns(xk, vk, u)
-
-    % persistent var
-    persistent invAB;
+    global numStates;
+    global stateMasks;
+    persistent invAB
+    % global invAB;
     if isempty(invAB)
         invAB = inv([calcAB([0,0,1]); calcAB([0, 1, 0]); calcAB([1, 0, 0]); calcAB([1, 1, 1]); calcAB([0, 0, 0])]);
     end
@@ -34,24 +35,23 @@ function [x] = StateTransitionFcns(xk, vk, u)
 
 
     R_nb = q2r(q_nb);
-    acc_body = (acc_m - acc_bias - acc_w) + [0; 0; 9.8];
-    acc_nav = R_nb * acc_body;
+    acc_nav = R_nb * (acc_m - acc_bias - acc_w) + [0; 0; 9.81];
 
     dp = vk * dT + 1/2 * acc_nav * dT^2;
     
     % 
     x = zeros(size(xk));
     x(1:3) = pk + dp;
-    x(4:6) = vk + R_nb * acc_nav * dT + vel_w;
+    x(4:6) = vk + acc_nav * dT + vel_w;
     x(7:9) = acc_bias + acc_bias_n;
     x(10:24) = mag_b + mag_bias_n;
    
-    %rotangle = omega_m * dT;
-    %rot12m = axang2rotm([rotangle / norm(rotangle); norm(rotangle)].');
-    rot12m = eye(3);
+    rotangle = omega_m * dT;
+    rot12m = axang2rotm([rotangle / norm(rotangle); norm(rotangle)].');
+    %rot12m = eye(3);
 
     % coordinates of selected points in R1
-    dp_body = eye(3) * vk * dT + 1/2 * acc_body * dT^2;
+    dp_body = R_nb.' * dp;
     pos_sel = rot12m * [0 0 1 1 0; 0 1 0 1 0; 1 0 0 1 0] + dp_body;
     RAB_C1 = [rot12m.' * calcAB(pos_sel(:, 1)); 
               rot12m.' * calcAB(pos_sel(:, 2));

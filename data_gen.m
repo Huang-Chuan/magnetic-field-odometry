@@ -19,9 +19,8 @@ function [Xs, ImuMag_data, x0] = data_gen(init_x0_m, stateCovariance, sensor_spa
             % generate random noise according to processNoise
             vk = mvnrnd(zeros(1, size(processNoise, 1)), processNoise, 1);
             vk = vk.';
-            
-            accelerometerReadings(i, :) = accBody(i, :) + vk(1 : 3).' + x(7:9).';
-             
+            R_nb = q2r(qBody(i, :));
+            accelerometerReadings(i, :) = accBody(i, :) + (R_nb.' * [0; 0; -9.81]).' + vk(1 : 3).' + x(7:9).';
             x = StateTransitionFcns(x, vk, [accelerometerReadings(i, :).'; qBody(i, :).'; omega(i, :).']);
             Xs{iter}(i + 1, :) = x.';
             y = MeasurementFcns(x, sensor_spacing) + sigma_magnetometer * randn(18, 1);
