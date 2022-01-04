@@ -1,5 +1,8 @@
-function error_struct = calc_error_2(XData, PData, Xs, numSamples, N)
-    [numStates, errorMasks] = getErrorStateMask();
+function error_struct = calc_error_2_new(XData, PData, Xs, numSamples, N, settings)
+%    [numStates, errorMasks] = getErrorStateMask();
+    numStates = settings.numErrorStates;
+    errorMasks = settings.errorStateMask;
+    %[settings.numErrorStates, settings.errorStateMask] = makeErrorStateMask(settings);
 
     mseError = zeros(numSamples, numStates, N);
     stdError = zeros(numSamples, numStates, N);
@@ -12,7 +15,7 @@ function error_struct = calc_error_2(XData, PData, Xs, numSamples, N)
         delta_q = quatmultiply(quatconj(XData{iter}(:, 7:10)) ,Xs{iter}(:, 7:10));
         mseError(:, :, iter) = [(XData{iter}(:, 1:6) - Xs{iter}(:, 1:6)).^2  ...
         delta_q(:,2:4).^2 ...
-        (XData{iter}(:, 11:46) - Xs{iter}(:, 11:46)).^2];
+        (XData{iter}(:, 11:end) - Xs{iter}(:, 11:end)).^2];
 
     
     end

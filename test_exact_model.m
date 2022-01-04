@@ -13,7 +13,7 @@
     fs = 100;
     dT = 1 / fs;
     % monte carlo simulation
-    N = 12;
+    N = 4;
 
     % simulate IMU noise
     sigma_acc_w = 0.05;
