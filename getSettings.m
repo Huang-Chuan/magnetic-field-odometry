@@ -1,9 +1,9 @@
 function settings = getSettings()
-    settings.radius = 1;   % meters
-    settings.speed = 0.5;      % meters per second
-    settings.climbRate = 0.0001;  % meters per second
-    settings.initialYaw = 90; % degrees
-    settings.pitch = 1;      % degrees
+    % settings.radius = 1;   % meters
+    % settings.speed = 0.5;      % meters per second
+    % settings.climbRate = 0.0001;  % meters per second
+    % settings.initialYaw = 90; % degrees
+    % settings.pitch = 1;      % degrees
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%             SENSOR PARAMETERS           %% 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -31,15 +31,17 @@ function settings = getSettings()
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     settings.generate_from_model = false;
     fprintf('Generate magnetic field from model: %d\n', settings.generate_from_model);
-
-
+    settings.model = 'model.mat';
+    if ~settings.generate_from_model
+        fprintf('load from file: %s\n', settings.model);
+    end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%             INIT PARAMETERS             %% 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    settings.init_pos = [settings.radius, 0, -1];
-    settings.init_vel = [0, settings.speed, settings.climbRate];
-    settings.init_orientation = quaternion([settings.initialYaw,settings.pitch,0],'eulerd','zyx','frame');
+    % settings.init_pos = [settings.radius, 0, -1];
+    % settings.init_vel = [0, settings.speed, settings.climbRate];
+    % settings.init_orientation = quaternion([settings.initialYaw,settings.pitch,0],'eulerd','zyx','frame');
     settings.init_acc_bias = [0 0 0];
     settings.init_gyro_bias = [0 0 0];
     settings.init_mag_bias = zeros(1, (settings.numSensors - 1) * 3);
@@ -50,7 +52,7 @@ function settings = getSettings()
     settings.init_sigma_acc_const_bias = 0.01;
     settings.init_sigma_gyro_const_bias = 0.05*pi/180;
     settings.init_sigma_mag_const_bias = 0.01;
-    settings.init_sigma_coeff    = 1;
+    settings.init_sigma_coeff    = sqrt(0.5);
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,7 +80,9 @@ function settings = getSettings()
         settings.sigma_gyro_w^2 * eye(3), ...
         settings.sigma_acc_bias_rw^2 * eye(3), ...
         settings.sigma_gyro_bias_rw^2* eye(3), ...
-        settings.sigma_mag_bias_rw^2* eye(((settings.numSensors - 1) * 3)), settings.sigma_coeff_w^2* eye(15));
+        settings.sigma_mag_bias_rw^2* eye(((settings.numSensors - 1) * 3)), ...
+        0.1*settings.sigma_coeff_w^2* eye(8), ...
+        settings.sigma_coeff_w^2* eye(7));
 
 
 

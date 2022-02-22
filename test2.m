@@ -3,7 +3,7 @@ clear all;
 addpath('common/');
 rng(1);
 %%
-N = 1000;
+N = 12;
 %[numStates, stateMasks] = getStateMask();
 %[numErrorStates, errorStateMasks] = getErrorStateMask();
 settings = getSettings();
@@ -71,17 +71,11 @@ parfor iter = 1 : N
     accelerometerReadings = ImuMag_data(iter).IMU(:, 1:3);
     gyroReadings = ImuMag_data(iter).IMU(:, 4:6);
     
-    
-    %magnetometerReadings = ImuMag_data(iter).MAG;
-    %accelerometerReadings = ImuMag_data(iter).IMU(:, 1:3);
-    %gyroReadings = ImuMag_data(iter).IMU(:, 4:6);
-    
-    %sol = solve(prob, xx, 'solver', 'fminunc');
+    % get initial value for polynomial coefficient
     coeff = inv(A.'*A) * A.'*magnetometerReadings(1, :).';
-    %delta = A * coeff.' - magnetometerReadings(1, :).'
-    %x0 = [settings.init_pos settings.init_vel compact(settings.init_orientation) settings.init_acc_bias settings.init_gyro_bias settings.init_mag_bias settings.init_coeff].';
+ 
 
-    x0 = [settings.init_pos settings.init_vel compact(settings.init_orientation) settings.init_acc_bias settings.init_gyro_bias settings.init_mag_bias coeff.'].'; 
+    x0 = [position(1,:) velocity(1,:) compact(orientation(1,:)) settings.init_acc_bias settings.init_gyro_bias settings.init_mag_bias coeff.'].'; 
     X = zeros(numSamples, numStates);
     Ps = zeros(numSamples, numStates - 1);
     
@@ -95,11 +89,44 @@ parfor iter = 1 : N
             omega_m = gyroReadings(i, :)';
             u = [acc_m; omega_m];
             [xh, F, Q] =  Nav_eq_new(x, u, dT, processNoiseCov, settings);
+            if (iter == 1) && (mod(i, 500) == 1)
+                r = PosMagArray();
+                s = rotatepoint(orientation(i + 1), r.') + position(i + 1, :);
+                XX = reshape(s(:, 1), 6, 5);
+                YY = reshape(s(:, 2), 6, 5);
+                ZZ = reshape(s(:, 3), 6, 5);
+                [MPredX, MPredY, MPredZ] = predict_field(xh(stateMasks.theta), position(i + 1, :), orientation(i + 1), XX, YY, ZZ);
+                [MX, MY, MZ] = get_actual_field('model.mat',  XX, YY, ZZ);
+                diffMX = MPredX - MX;
+                diffMY = MPredY - MY;
+                diffMZ = MPredZ - MZ;
+                figure('visible','off');
+                title(sprintf('time %d', i));
+                subplot(3,3,1);
+                surf(MPredX);
+                subplot(3,3,2);
+                surf(MPredY);
+                subplot(3,3,3);
+                surf(MPredZ);
+                subplot(3,3,4);
+                surf(MX);
+                subplot(3,3,5);
+                surf(MY);
+                subplot(3,3,6);
+                surf(MZ);
+                subplot(3,3,7);
+                surf(diffMX);
+                subplot(3,3,8);
+                surf(diffMY);
+                subplot(3,3,9);
+                surf(diffMZ);
+                saveas(gcf,sprintf('res/Pred_time_%d', i),'jpg');
+            end
             % cov propagation
             P = F * P * F' + Q;
             H = settings.H;
             
-            if i > 6000
+            if i < 1000
                 H = [settings.H; [eye(3) zeros(3, numErrorStates - 3)]];
                 measurementNoiseCov_ =  blkdiag(measurementNoiseCov, 0.01^2*eye(3));
                 K = P * H' / (H * P * H' + measurementNoiseCov_);
@@ -107,14 +134,6 @@ parfor iter = 1 : N
                            (position(i+1, :).'+ 0.01*randn(3,1))-xh(stateMasks.pos)];
                 delta_x = K * delta_z;
                 P = (eye(size(P)) - K * H) * P * (eye(size(P)) - K * H)' + K * measurementNoiseCov_ * K';
-                
-%                 H = [eye(3) zeros(3, numErrorStates - 3)];
-%                 measurementNoiseCov_ =  0.1^2*eye(3);
-%                 K = P * H' / (H * P * H' + measurementNoiseCov_);
-%                 delta_z =(position(i+1, :).'+ 0.1*randn(3,1)) - xh(stateMasks.pos);
-%                 delta_x = K * delta_z;
-%                 P = (eye(size(P)) - K * H) * P * (eye(size(P)) - K * H)' + K * measurementNoiseCov_ * K';
-
 
 
             else
@@ -135,6 +154,43 @@ parfor iter = 1 : N
             xh(stateMasks.mag_bias) = xh(stateMasks.mag_bias) +  delta_x(errorStateMasks.mag_bias);
             xh(stateMasks.theta) = xh(stateMasks.theta) +  delta_x(errorStateMasks.theta);
              
+
+            if (iter == 1) && (mod(i, 500) == 1)
+                r = PosMagArray();
+                s = rotatepoint(orientation(i + 1), r.') + position(i + 1, :);
+                XX = reshape(s(:, 1), 6, 5);
+                YY = reshape(s(:, 2), 6, 5);
+                ZZ = reshape(s(:, 3), 6, 5);
+                [MPredX, MPredY, MPredZ] = predict_field(xh(stateMasks.theta), position(i + 1, :), orientation(i + 1), XX, YY, ZZ);
+                [MX, MY, MZ] = get_actual_field('model.mat',  XX, YY, ZZ);
+                diffMX = MPredX - MX;
+                diffMY = MPredY - MY;
+                diffMZ = MPredZ - MZ;
+                figure('visible','off');
+                title(sprintf('time %d', i));
+                subplot(3,3,1);
+                surf(MPredX);
+                subplot(3,3,2);
+                surf(MPredY);
+                subplot(3,3,3);
+                surf(MPredZ);
+                subplot(3,3,4);
+                surf(MX);
+                subplot(3,3,5);
+                surf(MY);
+                subplot(3,3,6);
+                surf(MZ);
+                subplot(3,3,7);
+                surf(diffMX);
+                subplot(3,3,8);
+                surf(diffMY);
+                subplot(3,3,9);
+                surf(diffMZ);
+                saveas(gcf,sprintf('res/Udp_time_%d', i),'jpg');
+            end
+
+
+
 
             x = xh;
             X(i + 1, :) = x;
@@ -159,13 +215,13 @@ title("trajectory");
 %%
 plot_figure
 %%
-tmp = load('model.mat');
+tmp = load(settings.model);
 
 m.moments = tmp.mm(:, 1:end-2);
 m.pos_dipoles = tmp.MM;
 m.f_earth = tmp.mm(:, end-1);
 clear tmp
-[Xq,Yq,Zq]=meshgrid(-1:0.2:1,-1:0.2:1,-1:0.2:0.5);
+[Xq,Yq,Zq]=meshgrid(-1:0.2:1,-1:0.2:1,0:0.1:1);
 m.pos_grid=[reshape(Xq,1,numel(Xq)); reshape(Yq,1,numel(Yq)); reshape(Zq,1,numel(Zq))];
 
 % Allocate memory
@@ -178,7 +234,6 @@ for ii=1:size(m.pos_grid,2)
         m.f_grid(:,ii)= m.f_grid(:,ii)+dipole(m.pos_grid(:,ii),m.pos_dipoles(:,kk),m.moments(:,kk));
     end
 end
-%%
 figure
 clf
 quiverC3D(m.pos_grid(1,:)',m.pos_grid(2,:)',m.pos_grid(3,:)',m.f_grid(1,:)',m.f_grid(2,:)',m.f_grid(3,:)','Colorbar',true,'LineWidth',0.5);
