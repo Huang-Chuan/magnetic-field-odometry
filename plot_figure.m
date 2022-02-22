@@ -294,38 +294,9 @@
         xlabel('time/s');
         ylabel('error');
         title(sprintf('theta %d error', i));
+        axis auto
     end
-    %saveas(gcf,sprintf('exp%d\\VelErrorX.jpg', 0));
 
-    % subplot(3,1,2)
-    % hold on;
-    % curve1 =  error_struct.stdThetaErr(:, 5);
-    % curve2 =  zeros(size(error_struct.stdThetaErr(:, 5)));
-    % inBetween = [curve1; flipud(curve2)];
-    % x = [timeVector fliplr(timeVector)];
-    % h = fill(x, inBetween, [0.9882 0.4157 0.9020], 'DisplayName','\sigma');
-    % h.FaceAlpha = 0.8;
-    % plot(timeVector, error_struct.mseThetaErr(:, 5), 'r', 'LineWidth', 2, 'DisplayName','Upd');
-    % xlabel('time/s');
-    % ylabel('error');
-    % title('theta 5 error');
-    
-    % %saveas(gcf,sprintf('exp%d\\VelErrorY.jpg', 0));
-
-
-    % subplot(3,1,3)
-    % hold on;
-    % curve1 =  error_struct.stdThetaErr(:, 10);
-    % curve2 =  zeros(size(error_struct.stdThetaErr(:, 10)));
-    % inBetween = [curve1; flipud(curve2)];
-    % x = [timeVector fliplr(timeVector)];
-    % h = fill(x, inBetween, [0.9882 0.4157 0.9020], 'DisplayName','\sigma');
-    % h.FaceAlpha = 0.8;
-    % plot(timeVector, error_struct.mseThetaErr(:, 10), 'r', 'LineWidth', 2, 'DisplayName','Upd');
-    % xlabel('time/s');
-    % ylabel('error');
-    % title('theta 10 error');
-    
     
     
     

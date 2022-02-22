@@ -25,7 +25,7 @@ function [ImuMag_data, ImuMag_bias, theta_cell] = sensor_data_gen(settings, posi
     %clear tmp
     theta_cell = cell(N, 1);
 
-
+    m_field = 0;
 
     if settings.generate_from_model 
         for iter = 1 : N
@@ -40,7 +40,7 @@ function [ImuMag_data, ImuMag_bias, theta_cell] = sensor_data_gen(settings, posi
             theta_cell{iter} = theta;
         end
     else
-        tmp = load('model.mat');
+        tmp = load(settings.model);
         %N_poles = 50;
         m.moments = tmp.mm(:, 1:end-2);
         m.pos_dipoles = tmp.MM;
@@ -48,17 +48,33 @@ function [ImuMag_data, ImuMag_bias, theta_cell] = sensor_data_gen(settings, posi
         clear tmp
         
         
+        % m_field = repmat(m.f_earth.', settings.numSamples, settings.numSensors);
+        % for ii = 1 : size(position, 1)
+        %         R = position(ii, :) + rotatepoint(orientation(ii), sensor_locs.');
+        %     % sensor loop
+        %     for jj = 1 : settings.numSensors
+        %         for kk = 1 : size(m.pos_dipoles, 2)
+        %             m_field(ii, (jj - 1) * 3 + 1: jj * 3) = m_field(ii, (jj - 1) * 3 + 1: jj * 3) + dipole(R(jj, :).', m.pos_dipoles(:,kk),m.moments(:,kk)).';
+        %         end
+        %         m_field(ii, (jj - 1) * 3 + 1: jj * 3) = rotateframe(orientation(ii), m_field(ii, (jj - 1) * 3 + 1: jj * 3));
+        %     end
+        % end
+        
         m_field = repmat(m.f_earth.', settings.numSamples, settings.numSensors);
-        for ii = 1 : size(position, 1)
-                R = position(ii, :) + rotatepoint(orientation(ii), sensor_locs.');
+        parfor ii = 1 : size(position, 1)
+            R = position(ii, :) + rotatepoint(orientation(ii), sensor_locs.');
+            mag_measurements = m_field(ii, :);
             % sensor loop
             for jj = 1 : settings.numSensors
                 for kk = 1 : size(m.pos_dipoles, 2)
-                    m_field(ii, (jj - 1) * 3 + 1: jj * 3) = m_field(ii, (jj - 1) * 3 + 1: jj * 3) + dipole(R(jj, :).', m.pos_dipoles(:,kk),m.moments(:,kk)).';
+                    mag_measurements((jj - 1) * 3 + 1: jj * 3) = mag_measurements((jj - 1) * 3 + 1: jj * 3) + dipole(R(jj, :).', m.pos_dipoles(:,kk),m.moments(:,kk)).';
                 end
-                m_field(ii, (jj - 1) * 3 + 1: jj * 3) = rotateframe(orientation(ii), m_field(ii, (jj - 1) * 3 + 1: jj * 3));
+                mag_measurements((jj - 1) * 3 + 1: jj * 3) = rotateframe(orientation(ii), mag_measurements((jj - 1) * 3 + 1: jj * 3));
             end
+            m_field(ii, :) = mag_measurements;
         end
+        
+        
         
         theta = inv(A.'* A) *A.' * m_field.';
         for iter = 1 : N
@@ -91,7 +107,7 @@ function [ImuMag_data, ImuMag_bias, theta_cell] = sensor_data_gen(settings, posi
 %     plot(x, m_field(2,:) - mean(m_field(2,:),'all'));
 %     plot(x, m_field(3,:) - mean(m_field(3,:),'all'));
 
-    for iter = 1 : N
+    parfor iter = 1 : N
         acc_bias = cumsum([settings.init_sigma_acc_const_bias * randn(1, 3); settings.sigma_acc_bias_rw * randn(settings.numSamples - 1, 3)]);
         accelerometerReadings = rotateframe(orientation, acceleration + [0 0 -9.81]) + acc_bias + ...
                                 settings.sigma_acc_w * randn(size(acceleration));
