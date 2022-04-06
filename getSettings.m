@@ -1,9 +1,4 @@
 function settings = getSettings()
-    % settings.radius = 1;   % meters
-    % settings.speed = 0.5;      % meters per second
-    % settings.climbRate = 0.0001;  % meters per second
-    % settings.initialYaw = 90; % degrees
-    % settings.pitch = 1;      % degrees
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%             SENSOR PARAMETERS           %% 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -20,10 +15,6 @@ function settings = getSettings()
     % number of sensors in array
     settings.numSensors = size(PosMagArray, 2);
 
-
-
-
-
     fprintf('Using %d magnetometers\n', settings.numSensors);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,21 +30,18 @@ function settings = getSettings()
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%             INIT PARAMETERS             %% 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % settings.init_pos = [settings.radius, 0, -1];
-    % settings.init_vel = [0, settings.speed, settings.climbRate];
-    % settings.init_orientation = quaternion([settings.initialYaw,settings.pitch,0],'eulerd','zyx','frame');
+
     settings.init_acc_bias = [0 0 0];
     settings.init_gyro_bias = [0 0 0];
     settings.init_mag_bias = zeros(1, (settings.numSensors - 1) * 3);
+    % init_coeff will be overwritten when using dipole magnetic field
     settings.init_coeff    = [25 25 25  0.001 * ones(1, 12)];
-    
-    
+
     % init uncertainty
     settings.init_sigma_acc_const_bias = 0.01;
     settings.init_sigma_gyro_const_bias = 0.05*pi/180;
-    settings.init_sigma_mag_const_bias = 0.01;
+    settings.init_sigma_mag_const_bias = 0 * 0.005;
     settings.init_sigma_coeff    = sqrt(0.5);
-
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%             FILTER PARAMETERS           %% 
@@ -66,13 +54,13 @@ function settings = getSettings()
 
 
     % IMU bias random walk noise 
-    settings.sigma_acc_bias_rw = 10^-6;
+    settings.sigma_acc_bias_rw = 10^-8;
     settings.sigma_gyro_bias_rw = 10^-7;
-    settings.sigma_mag_bias_rw = 10^-7;
+    settings.sigma_mag_bias_rw = 0*10^-7;
 
 
     % coefficient process noise
-    settings.sigma_coeff_w =1;
+    settings.sigma_coeff_w =[6e-3*ones(8,1); 0.2*ones(7,1)];
 
 
     % Q matrix
@@ -81,22 +69,24 @@ function settings = getSettings()
         settings.sigma_acc_bias_rw^2 * eye(3), ...
         settings.sigma_gyro_bias_rw^2* eye(3), ...
         settings.sigma_mag_bias_rw^2* eye(((settings.numSensors - 1) * 3)), ...
-        0.1*settings.sigma_coeff_w^2* eye(8), ...
-        settings.sigma_coeff_w^2* eye(7));
+        diag(settings.sigma_coeff_w.^2) );
 
 
 
     % magnetometer measurement (R)
     % Standard deviations, need to be squared
     settings.sigma_mag_w = 1e-2;
-    settings.R = eye(settings.numSensors * 3) * settings.sigma_mag_w^2;
+    settings.R = eye(settings.numSensors * 3) * (settings.sigma_mag_w)^2;
 
     % Initial Kalman filter uncertainties (position, velocity, orientation, sensor bias, coefficient) 
     settings.P = diag([zeros(9, 1); 
                         settings.init_sigma_acc_const_bias^2   * ones(3, 1); 
                         settings.init_sigma_gyro_const_bias^2  * ones(3, 1);
                         settings.init_sigma_mag_const_bias^2   * ones((settings.numSensors - 1) * 3, 1);
-                        settings.init_sigma_coeff^2 * ones(15, 1)           ;]);
+                        4e-3^2 * ones(3, 1);
+                        3e-2^2 * ones(4, 1);
+                        1e-2^2;
+                        3e-1^2 * ones(7, 1)]);
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,13 +1,20 @@
 function [x, F, Q] = Nav_eq_new(xk, u, dt, processNoiseCov, settings)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+%   INPUT:
+%                 xk:  current state
+%                  u:  accelerometer reading and gyroscope reading
+%    processNoiseCov:  covariance matrix for process noise
+%   
+%   OUTPUT:
+%                  x:  predict state               
+%                  F:  transition matrix for error state
+%                  Q:  processNoise for error state transition model
     persistent numStates;
     persistent masks;
     persistent numErrorStates;
     persistent errorMasks;
     persistent invA;
 
-
+%   same A as in paper
     if isempty(invA)
         invA = inv([calcAB([0, 0, 1]); calcAB([0, 1, 0]); calcAB([1, 0, 0]); calcAB([1, 1, 1]); calcAB([0, 0, 0])]);
     end
@@ -114,9 +121,6 @@ function [x, F, Q] = Nav_eq_new(xk, u, dt, processNoiseCov, settings)
     Q = Fi * processNoiseCov * Fi';
 
 
-
-    % next(errorMasks.theta) = invA * [B J1J2] * (M * [delta_pk;delta_vk;epsilon;delta_acc_bias;delta_gyro_bias;delta_theta] - [zeros(15, 1); dt^2/2 * acc_noise; zeros(3, 1)]) ... 
-    %                          - J1J2(:, end-2:end) * gyro_rw_noise  + theta_noise;
 
 end
 

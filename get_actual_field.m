@@ -1,5 +1,5 @@
 function [MPredX, MPredY, MPredZ]= get_actual_field(model, X, Y, Z)
-% Input: 
+% INPUT: 
 % xh: state vector
 % position: current sensor position
 % orientation: current sensor orientation
