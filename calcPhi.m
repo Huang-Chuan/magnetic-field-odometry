@@ -1,4 +1,5 @@
-function AB = calcAB(X)
+function AB = calcPhi(X)
+% calculate regression matrix Phi(X) as in eq.6 at location X
     rx = X(1);
     ry = X(2);
     rz = X(3);

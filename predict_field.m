@@ -12,7 +12,7 @@ XYZ = [X(:) Y(:) Z(:)];
 cord_local = rotateframe(orientation, XYZ - pos);
 MPred = [];
 for i = 1 : size(cord_local, 1)
-    MPred = [MPred; rotatepoint(orientation, (calcAB(cord_local(i, :)) * theta).')];
+    MPred = [MPred; rotatepoint(orientation, (calcPhi(cord_local(i, :)) * theta).')];
 end
 
 

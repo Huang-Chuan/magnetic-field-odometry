@@ -1,8 +1,6 @@
-function error_struct = calc_error_2_new(XData, PData, Xs, numSamples, N, settings)
-%    [numStates, errorMasks] = getErrorStateMask();
+function error_struct = calc_error(XData, PData, Xs, numSamples, N, settings)
     numStates = settings.numErrorStates;
     errorMasks = settings.errorStateMask;
-    %[settings.numErrorStates, settings.errorStateMask] = makeErrorStateMask(settings);
 
     mseError = zeros(numSamples, numStates, N);
     stdError = zeros(numSamples, numStates, N);
@@ -16,8 +14,6 @@ function error_struct = calc_error_2_new(XData, PData, Xs, numSamples, N, settin
         mseError(:, :, iter) = [(XData{iter}(:, 1:6) - Xs{iter}(:, 1:6)).^2  ...
         delta_q(:,2:4).^2 ...
         (XData{iter}(:, 11:end) - Xs{iter}(:, 11:end)).^2];
-
-    
     end
     
     
@@ -32,8 +28,6 @@ function error_struct = calc_error_2_new(XData, PData, Xs, numSamples, N, settin
     error_struct.mseMagBiasErr = mseError(:, errorMasks.mag_bias);
     error_struct.mseThetaErr = mseError(:, errorMasks.theta);
     error_struct.mseGyroErr = mseError(:, errorMasks.gyro_bias);
-    %error_struct.mseCoeffErr = norm(mseError(:, errorMasks.mseCoeffErr));
-
 
 
     error_struct.stdPosErr = stdError(:, errorMasks.pos);

@@ -20,13 +20,14 @@ function settings = getSettings()
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%         MAGNETIC FIELD SETTINGS        %% 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    settings.generate_from_model = false;
+    settings.generate_from_model = false;       % false: generate magenetic measurements from state-space model   
+                                                %  true: load dipole magnetic field model from file                                      
     fprintf('Generate magnetic field from model: %d\n', settings.generate_from_model);
     settings.model = 'model.mat';
     if ~settings.generate_from_model
         fprintf('load from file: %s\n', settings.model);
     end
-
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%             INIT PARAMETERS             %% 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -79,7 +80,7 @@ function settings = getSettings()
     settings.R = eye(settings.numSensors * 3) * (settings.sigma_mag_w)^2;
 
     % Initial Kalman filter uncertainties (position, velocity, orientation, sensor bias, coefficient) 
-    settings.P = diag([zeros(9, 1); 
+    settings.P = diag([ 1e-8 * ones(9, 1); 
                         settings.init_sigma_acc_const_bias^2   * ones(3, 1); 
                         settings.init_sigma_gyro_const_bias^2  * ones(3, 1);
                         settings.init_sigma_mag_const_bias^2   * ones((settings.numSensors - 1) * 3, 1);
@@ -96,25 +97,15 @@ function settings = getSettings()
     [settings.numErrorStates, settings.errorStateMask] = makeErrorStateMask(settings);
     [settings.numStates, settings.stateMask] = makeStateMask(settings);
 
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%             STATE MASKS                 %% 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
     % measurement matrix
-    settings.A = [];
+    settings.Phi = [];
     for i = 1 : size(settings.sensor_locs, 2)
-        settings.A =  [settings.A; calcAB(settings.sensor_locs(:, i))];
+        settings.Phi =  [settings.Phi; calcPhi(settings.sensor_locs(:, i))];
     end
 
     settings.H = zeros(settings.numSensors * 3, settings.numErrorStates);
     settings.H(1:sum(settings.errorStateMask.mag_bias), settings.errorStateMask.mag_bias) = eye(sum(settings.errorStateMask.mag_bias));
-    settings.H(:, settings.errorStateMask.theta) = settings.A;
-
-
-
+    settings.H(:, settings.errorStateMask.theta) = settings.Phi;
 end
 
 
