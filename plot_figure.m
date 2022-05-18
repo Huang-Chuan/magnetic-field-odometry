@@ -33,7 +33,7 @@ ylabel('y [m]','FontSize',12,'FontName','Times New Roman')
 zlabel('z [m]','FontSize',12,'FontName','Times New Roman')
 axis tight;
 
-print('magnetic-field', '-depsc', '-r600', '-painters' );
+print('figures/magnetic-field', '-depsc', '-r600', '-painters' );
 
 
 
@@ -89,7 +89,7 @@ plot(timeVector, error_struct.msePosErr(:, 2), 'r','LineWidth', 2);
 plot(timeVector, error_struct_1.msePosErr(:, 2), 'k--','LineWidth', 2);
 xlabel('time [s]','FontSize',12,'FontName','Times New Roman')
 ylabel('error [m]','FontSize',12,'FontName','Times New Roman')
-title('position error x-axis','FontSize',12,'FontName','Times New Roman')
+title('position error y-axis','FontSize',12,'FontName','Times New Roman')
 grid minor;
 box on
 subplot(3,1,3)
@@ -102,7 +102,7 @@ plot(timeVector, error_struct.msePosErr(:, 3), 'r','LineWidth', 2);
 plot(timeVector, error_struct_1.msePosErr(:, 3), 'k--','LineWidth', 2);
 xlabel('time [s]','FontSize',12,'FontName','Times New Roman')
 ylabel('error [m]','FontSize',12,'FontName','Times New Roman')
-title('position error x-axis','FontSize',12,'FontName','Times New Roman')
+title('position error z-axis','FontSize',12,'FontName','Times New Roman')
 grid minor;
 box on
 
