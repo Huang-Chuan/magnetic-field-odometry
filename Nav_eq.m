@@ -1,8 +1,10 @@
-function [x, F, Q] = Nav_eq_new(xk, u, dt, processNoiseCov, settings)
+function [x, F, Q] = Nav_eq(xk, u, dt, processNoiseCov, settings)
 %   INPUT:
 %                 xk:  current state
 %                  u:  accelerometer reading and gyroscope reading
+%                 dt:  sampling interval
 %    processNoiseCov:  covariance matrix for process noise
+%           settings:  struct setting 
 %   
 %   OUTPUT:
 %                  x:  predict state               
@@ -14,9 +16,9 @@ function [x, F, Q] = Nav_eq_new(xk, u, dt, processNoiseCov, settings)
     persistent errorMasks;
     persistent invA;
 
-%   same A as in paper
+    %   invA as in eq. 13
     if isempty(invA)
-        invA = inv([calcAB([0, 0, 1]); calcAB([0, 1, 0]); calcAB([1, 0, 0]); calcAB([1, 1, 1]); calcAB([0, 0, 0])]);
+        invA = inv([calcPhi([0, 0, 1]); calcPhi([0, 1, 0]); calcPhi([1, 0, 0]); calcPhi([1, 1, 1]); calcPhi([0, 0, 0])]);
     end
 
     if isempty(numStates)
@@ -26,9 +28,7 @@ function [x, F, Q] = Nav_eq_new(xk, u, dt, processNoiseCov, settings)
         errorMasks = settings.errorStateMask;           
     end
     
-
-
-    % position, velocity,  accelerometer bias, magnetometer bias, theta
+    % parse xk
     pk = xk(masks.pos);
     vk = xk(masks.vel);
     q_nb = xk(masks.q_nb);
@@ -46,7 +46,7 @@ function [x, F, Q] = Nav_eq_new(xk, u, dt, processNoiseCov, settings)
     acc_nav = R_nb * (acc_m - acc_bias) + [0; 0; 9.81];
     dp = vk * dt + 1/2 * acc_nav * dt^2;
     
-    % 
+    % nominal state \hat{x}_k as in eq. 16
     x = zeros(size(xk));
     x(masks.pos) = pk + dp;
     x(masks.vel) = vk + acc_nav * dt;
@@ -58,23 +58,18 @@ function [x, F, Q] = Nav_eq_new(xk, u, dt, processNoiseCov, settings)
     
     x(masks.gyro_bias) = gyro_bias;
     x(masks.q_nb) = (quatmultiply(q_nb.', rotvec2quat(rotangle.'))).';
-
-    % coordinates of selected points in R1
+ 
+    % coordinates of r^{b_k} as in eq. 11
     dp_body = R_nb.' * dp;
     pos_sel = rot12m * [0 0 1 1 0; 0 1 0 1 0; 1 0 0 1 0] + dp_body;
     
-    
-    AB = [calcAB(pos_sel(:, 1));
-          calcAB(pos_sel(:, 2));
-          calcAB(pos_sel(:, 3));
-          calcAB(pos_sel(:, 4));
-          calcAB(pos_sel(:, 5))];
 
-    B = [rot12m.' * AB(1:3, :); 
-              rot12m.' * AB(4:6, :);
-              rot12m.' * AB(7:9, :);
-              rot12m.' * AB(10:12, :);
-              rot12m.' * AB(13:15, :)];
+    % B as in eq. 11
+    B = [rot12m.' * calcPhi(pos_sel(:, 1)); 
+         rot12m.' * calcPhi(pos_sel(:, 2));
+         rot12m.' * calcPhi(pos_sel(:, 3));
+         rot12m.' * calcPhi(pos_sel(:, 4));
+         rot12m.' * calcPhi(pos_sel(:, 5))];
    
     x(masks.mag_bias) = mag_bias;
     x(masks.theta) = invA * B * theta;
@@ -92,14 +87,15 @@ function [x, F, Q] = Nav_eq_new(xk, u, dt, processNoiseCov, settings)
     F(errorMasks.gyro_bias, errorMasks.gyro_bias) = eye(3);
     F(errorMasks.mag_bias, errorMasks.mag_bias) = eye(sum(errorMasks.mag_bias));
 
-
+    % J1J2 as in eq. 23b and 23c
     J1J2 = [dB_dpsi(dp_body, [0, 0, 1]', dt, omega_h, theta); ...
             dB_dpsi(dp_body, [0, 1, 0]', dt, omega_h, theta); ...
             dB_dpsi(dp_body, [1, 0, 0]', dt, omega_h, theta); ...
             dB_dpsi(dp_body, [1, 1, 1]', dt, omega_h, theta); ...
             dB_dpsi(dp_body, [0, 0, 0]', dt, omega_h, theta)];
-
-    M = zeros(21, numErrorStates);
+    
+    % M as in eq. 23d
+    M = zeros(21, numErrorStates);                        
     M(1:15, errorMasks.theta) = eye(15);
     M(16:18, errorMasks.vel)   = R_nb.' * dt;
     M(16:18, errorMasks.epsilon)  = vect2skew(R_nb.' *  dt * (vk + [0; 0; 9.81] * dt / 2));
@@ -119,8 +115,6 @@ function [x, F, Q] = Nav_eq_new(xk, u, dt, processNoiseCov, settings)
     Fi(errorMasks.theta, 4 : 6) = -invA * J1J2(:, end-2:end);
     Fi(errorMasks.theta, 13 + (settings.numSensors - 1) * 3 : 13 + (settings.numSensors - 1) * 3 + 14) = eye(15);
     Q = Fi * processNoiseCov * Fi';
-
-
 
 end
 

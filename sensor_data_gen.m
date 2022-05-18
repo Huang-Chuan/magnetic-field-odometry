@@ -1,14 +1,10 @@
 function [ImuMag_data, ImuMag_bias, theta_cell, aux] = sensor_data_gen(settings, position, orientation, acceleration, angularVelocity, N)
-    % OUTPUT:
-    % theta_cell: N x 1 cell, each cell contatins theta matrix of dimension
-    % numSamples * dim(coeff)  
+
     numSamples = settings.numSamples;
     numSensors = settings.numSensors;
-    invA = inv([calcAB([0,0,1]); calcAB([0, 1, 0]); calcAB([1, 0, 0]); calcAB([1, 1, 1]); calcAB([0, 0, 0])]);
+    invA = inv([calcPhi([0,0,1]); calcPhi([0, 1, 0]); calcPhi([1, 0, 0]); calcPhi([1, 1, 1]); calcPhi([0, 0, 0])]);
     sensor_locs = settings.sensor_locs;
-    A = settings.A;
-    %theta_data = zeros(15, settings.numSamples, N);
-
+    Phi = settings.Phi;
     ImuMag_data = repmat(struct('IMU', [], 'MAG', []), N, 1);
     ImuMag_bias = repmat(struct('IMU', [], 'MAG', []), N, 1);
 
@@ -17,6 +13,7 @@ function [ImuMag_data, ImuMag_bias, theta_cell, aux] = sensor_data_gen(settings,
 
     m_field = 0;
 
+    % if generate magnetic field measurements from state-space model
     if settings.generate_from_model 
         for iter = 1 : N
             theta = zeros(15, numSamples);
@@ -28,14 +25,13 @@ function [ImuMag_data, ImuMag_bias, theta_cell, aux] = sensor_data_gen(settings,
             end
             theta_cell{iter} = theta;
         end
+    % load dipole model from file
     else
         tmp = load(settings.model);
-        %N_poles = 50;
         m.moments = tmp.mm(:, 1:end-2);
         m.pos_dipoles = tmp.MM;
         m.f_earth = tmp.mm(:, end-1);
         clear tmp
-        
         m_field = repmat(m.f_earth.', numSamples, numSensors);
         parfor ii = 1 : size(position, 1)
             R = position(ii, :) + rotatepoint(orientation(ii), sensor_locs.');
@@ -49,10 +45,8 @@ function [ImuMag_data, ImuMag_bias, theta_cell, aux] = sensor_data_gen(settings,
             end
             m_field(ii, :) = mag_measurements;
         end
-        
-        
-        
-        theta = inv(A.'* A) *A.' * m_field.';
+
+        theta = inv(Phi.'* Phi) *Phi.' * m_field.';
         for iter = 1 : N
             theta_cell{iter} = theta;
         end
@@ -63,12 +57,7 @@ function [ImuMag_data, ImuMag_bias, theta_cell, aux] = sensor_data_gen(settings,
                                             position(i, :) - position(i - 1, :), orientation(i - 1, :), angularVelocity(i - 1, :));
             aux(i - 1, :) = (theta_n - theta(:, i)).';
         end
-        
-
-
-
     end
-
 
 
     parfor iter = 1 : N
@@ -83,7 +72,7 @@ function [ImuMag_data, ImuMag_bias, theta_cell, aux] = sensor_data_gen(settings,
         ImuMag_bias(iter).MAG = mag_bias;
 
         if settings.generate_from_model
-            magnetometerReadings = (A * theta_cell{iter}).' + [mag_bias zeros(numSamples, 3)] + settings.sigma_mag_w * randn(size((A * theta_cell{iter}).')); 
+            magnetometerReadings = (Phi * theta_cell{iter}).' + [mag_bias zeros(numSamples, 3)] + settings.sigma_mag_w * randn(size((Phi * theta_cell{iter}).')); 
         else
             magnetometerReadings = m_field + [mag_bias zeros(numSamples, 3)] + settings.sigma_mag_w * randn(size(m_field)); 
         end
@@ -103,11 +92,11 @@ function theta = propogate_theta(settings, theta, invA, dp_nav, orientation, ang
         rotvec = rotateframe(orientation, angularVelocity)  * settings.dT;
         R_12  = q2r(rotvec2quat(rotvec));
         pos_sel = R_12 * [0 0 1 1 0; 0 1 0 1 0; 1 0 0 1 0] + rotateframe(orientation, dp_nav).';
-        B = [R_12.' * calcAB(pos_sel(:, 1)); 
-            R_12.' * calcAB(pos_sel(:, 2));
-            R_12.' * calcAB(pos_sel(:, 3));
-            R_12.' * calcAB(pos_sel(:, 4));
-            R_12.' * calcAB(pos_sel(:, 5))];
+        B = [R_12.' * calcPhi(pos_sel(:, 1)); 
+            R_12.' * calcPhi(pos_sel(:, 2));
+            R_12.' * calcPhi(pos_sel(:, 3));
+            R_12.' * calcPhi(pos_sel(:, 4));
+            R_12.' * calcPhi(pos_sel(:, 5))];
         theta = invA * B * theta + settings.sigma_coeff_w * randn(size(theta));
 end
 
@@ -116,10 +105,10 @@ function theta = propogate_theta_(settings, theta, invA, dp_nav, orientation, an
         rotvec = rotateframe(orientation, angularVelocity)  * settings.dT;
         R_12  = q2r(rotvec2quat(rotvec));
         pos_sel = R_12 * [0 0 1 1 0; 0 1 0 1 0; 1 0 0 1 0] + rotateframe(orientation, dp_nav).';
-        B = [R_12.' * calcAB(pos_sel(:, 1)); 
-            R_12.' * calcAB(pos_sel(:, 2));
-            R_12.' * calcAB(pos_sel(:, 3));
-            R_12.' * calcAB(pos_sel(:, 4));
-            R_12.' * calcAB(pos_sel(:, 5))];
+        B = [R_12.' * calcPhi(pos_sel(:, 1)); 
+            R_12.' * calcPhi(pos_sel(:, 2));
+            R_12.' * calcPhi(pos_sel(:, 3));
+            R_12.' * calcPhi(pos_sel(:, 4));
+            R_12.' * calcPhi(pos_sel(:, 5))];
         theta = invA * B * theta;
 end
