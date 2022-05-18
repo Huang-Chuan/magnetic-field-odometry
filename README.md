@@ -1,7 +1,7 @@
 # Magnetic-Field aided Inertial Navigation System
 
 This repo implements a magnetic-Field aided inertial navigation system as in paper [A Tightly-Integrated Magnetic-Field aided Inertial
-Navigation System](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwji6qLu88LuAhWjFTQIHW85BqMQFjACegQIARAC&url=https%3A%2F%2Fori.ox.ac.uk%2Fmedia%2F5535%2F2018icra_cen.pdf&usg=AOvVaw3V3-M2y-G6erdox6S1aw6j). 
+Navigation System](https://www.researchgate.net/publication/360672526_A_Tightly-Integrated_Magnetic-Field_aided_Inertial_Navigation_System). 
 
 ## Comparison with a pure standalone INS
 |![](./comparison.png)
