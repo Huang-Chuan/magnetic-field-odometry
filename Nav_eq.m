@@ -43,7 +43,7 @@ function [x, F, Q] = Nav_eq(xk, u, dt, processNoiseCov, settings)
     omega_m = u(4:end);
 
 
-    acc_nav = R_nb * (acc_m - acc_bias) + [0; 0; 9.81];
+    acc_nav = R_nb * (acc_m - acc_bias) + settings.g;
     dp = vk * dt + 1/2 * acc_nav * dt^2;
     
     % nominal state \hat{x}_k as in eq. 16
@@ -98,7 +98,7 @@ function [x, F, Q] = Nav_eq(xk, u, dt, processNoiseCov, settings)
     M = zeros(21, numErrorStates);                        
     M(1:15, errorMasks.theta) = eye(15);
     M(16:18, errorMasks.vel)   = R_nb.' * dt;
-    M(16:18, errorMasks.epsilon)  = vect2skew(R_nb.' *  dt * (vk + [0; 0; 9.81] * dt / 2));
+    M(16:18, errorMasks.epsilon)  = vect2skew(R_nb.' *  dt * (vk + settings.g * dt / 2));
     M(16:18, errorMasks.acc_bias)   = -dt^2 / 2 * eye(3);
     M(19:21, errorMasks.gyro_bias)  = - eye(3);
 

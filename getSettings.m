@@ -17,6 +17,11 @@ function settings = getSettings()
 
     fprintf('Using %d magnetometers\n', settings.numSensors);
 
+
+    %% g %%
+    settings.g=[0;0;-9.82];
+
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%         MAGNETIC FIELD SETTINGS        %% 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

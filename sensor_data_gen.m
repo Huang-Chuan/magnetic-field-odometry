@@ -62,7 +62,7 @@ function [ImuMag_data, ImuMag_bias, theta_cell, aux] = sensor_data_gen(settings,
 
     parfor iter = 1 : N
         acc_bias = cumsum([settings.init_sigma_acc_const_bias * randn(1, 3); settings.sigma_acc_bias_rw * randn(numSamples - 1, 3)]);
-        accelerometerReadings = rotateframe(orientation, acceleration + [0 0 -9.81]) + acc_bias + ...
+        accelerometerReadings = rotateframe(orientation, acceleration - settings.g') + acc_bias + ...
                                 settings.sigma_acc_w * randn(size(acceleration));
         gyro_bias = cumsum([settings.init_sigma_gyro_const_bias * randn(1, 3); settings.sigma_gyro_bias_rw * randn(numSamples - 1, 3)]);
         gyroReadings = rotateframe(orientation, angularVelocity) + gyro_bias + settings.sigma_gyro_w * randn(size(angularVelocity));
