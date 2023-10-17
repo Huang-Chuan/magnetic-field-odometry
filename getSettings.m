@@ -44,8 +44,8 @@ function settings = getSettings()
     settings.init_coeff    = [25 25 25  0.001 * ones(1, 12)];
 
     % init uncertainty
-    settings.init_sigma_acc_const_bias = 0.01;
-    settings.init_sigma_gyro_const_bias = 0.05*pi/180;
+    settings.init_sigma_acc_const_bias = 0.2;
+    settings.init_sigma_gyro_const_bias = 0.2*pi/180;
     settings.init_sigma_mag_const_bias = 0 * 0.005;
     settings.init_sigma_coeff    = sqrt(0.5);
 

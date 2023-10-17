@@ -9,8 +9,8 @@ function [position,orientation,velocity,acceleration,angularVelocity] = trajecto
     % create the trajectory in paper
     ascend_acc = 5e-4;
     omega = 0.3; 
-    roll_rate = 0.2/pi*180;
-    pitch_rate = 0.2/pi*180;
+    roll_rate = 0.5/pi*180;
+    pitch_rate = 0.3/pi*180;
     yaw_rate = 0.2/pi*180;
     
     x = sin(omega * t) ;
@@ -23,10 +23,11 @@ function [position,orientation,velocity,acceleration,angularVelocity] = trajecto
     position = [x y z];
     velocity = [vx vy vz];
 
-    orientation = quaternion([roll_rate * t pitch_rate * t yaw_rate * t], ...
+    orientation = quaternion([yaw_rate * t  pitch_rate * sin(t) roll_rate * cos(t)], ...
                              'eulerd','ZYX','frame');
     acceleration = [-omega^2 * sin(omega * t)   -omega^2 * cos(omega * t)  ascend_acc * ones(numSamples, 1)];
     
+    angularVelocity = zeros(numSamples, 3);                   
     for i = 1 : numSamples - 1
         dq = quatmultiply(quatconj(compact(orientation(i))), compact(orientation(i + 1)));
         angularVelocity(i, :) = rotatepoint(orientation(i), 2 * dq(end-2:end) * fs);
