@@ -24,8 +24,8 @@ for i = 1 : N
 
     data.ImuMag_bias = ImuMag_bias(i);
     data.numFrames = length(position);
-    data.u = ImuMag_data.IMU;
-    data.mag_array.field = ImuMag_data.MAG;
+    data.u = ImuMag_data(i).IMU;
+    data.mag_array.field = ImuMag_data(i).MAG;
     data.t = timeVector;
     save(fullfile("data", data.name), "data");
 end
